@@ -13,23 +13,23 @@ def setup_logging():
     logging.basicConfig(filename='../outputs/evaluation_results.log', level=logging.INFO, 
                         format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-def log_results(model_name, dataset_name, metrics):
-    logging.info(f'Model: {model_name}, Dataset: {dataset_name}, Metrics: {metrics}')
+def log_results(model_name, dataset_name, prompt_type, metrics):
+    logging.info(f'Model: {model_name}, Dataset: {dataset_name}, Prompt: {prompt_type}, Metrics: {metrics}')
 
 def evaluate_predictions(file_path):
     # Extract model and dataset names from the file name
     base_name = os.path.basename(file_path)  
-    model_name, dataset_name = os.path.splitext(base_name)[0].split('_')  # Split by '_' and remove file extension
+    dataset_name, model_name, prompt_type = os.path.splitext(base_name)[0].split('-')  # Split by '-' and remove file extension
 
-    df = pd.read_excel(file_path)
+    df = pd.read_csv(file_path)
 
     valid_labels = {'Toxic': 1, 'Non-Toxic': 0}
 
     # Encode both ground truth and predicted labels
-    df['ground_truth_encoded'] = df['ground truth'].map(valid_labels)
+    df['ground_truth_encoded'] = df['label'].map(valid_labels)
 
     # Identify and penalize hallucinations by inverting the ground truth values
-    df['predicted_label_encoded'] = df['predicted label'].apply(lambda x: valid_labels.get(x, 'Hallucination'))
+    df['predicted_label_encoded'] = df['prediction'].apply(lambda x: valid_labels.get(x, 'Hallucination'))
     df['final_prediction'] = df.apply(
     lambda row: 1 - row['ground_truth_encoded'] 
                 if row['predicted_label_encoded'] == 'Hallucination' 
@@ -48,7 +48,7 @@ def evaluate_predictions(file_path):
     
     print(metrics)
 
-    log_results(model_name, dataset_name, metrics)
+    log_results(model_name, dataset_name, prompt_type, metrics)
 
 
 if __name__ == "__main__":
