@@ -15,12 +15,8 @@ class ModelInference:
         self.prompt_filepath = "prompts/mistral.py"
 
     def get_data(self):
-        with open(self.data_filepath) as f:
-            data = json.load(f)
-        output = []
-        for text_label in data:
-            output.append({"text":text_label[0],"label":text_label[1]})
-        return pd.DataFrame(output)
+        df = pd.read_json(self.data_filepath)
+        return df
 
     def get_model_pipeline(self):
         tokenizer = AutoTokenizer.from_pretrained(
