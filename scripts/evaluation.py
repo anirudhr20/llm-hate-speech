@@ -54,7 +54,7 @@ def evaluate_predictions(file_path):
 if __name__ == "__main__":
     setup_logging()
     parser = argparse.ArgumentParser()
-    parser.add_argument('file_path', type=str, help='The path to the Excel file containing the predictions and ground truth labels.')
+    parser.add_argument('-fp','--file_path', type=str, help='The path to the Excel file containing the predictions and ground truth labels.')
 
     args = parser.parse_args()
 
