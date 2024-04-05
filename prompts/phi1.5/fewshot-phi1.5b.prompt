@@ -1,9 +1,11 @@
-abuse_prmopt = """
+##Instruction
 
 Given the definition of hate speech as any form of communication in speech, writing, or behavior that attacks or
 uses pejorative or discriminatory language with reference to a person or a group based on who they are—specifically 
 their religion, ethnicity, nationality, race, color, descent, gender, or other identity factor—classify the following 
 sentences as "Toxic" or "Non-Toxic":
+
+### Input:
 
 Example 1:
 Sentence: "Emotional support is just as important if not more important than financial support. If his/her parents 
@@ -26,8 +28,6 @@ Classification: Toxic
 
 Now, classify the following sentence as either "Toxic" or "Non-Toxic":
 
-Sentence: {sentence}
+Sentence: {input_sentence}
 
-Response:
-
-"""
+### Response:
