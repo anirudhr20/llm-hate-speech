@@ -6,6 +6,9 @@ import json
 import pandas as pd
 from datasets import Dataset
 import argparse
+import time
+from tqdm import tqdm
+
 
 transformers.utils.logging.set_verbosity(transformers.logging.CRITICAL)
 
@@ -42,7 +45,7 @@ class ModelInference:
         predictions = []
         texts = []
         labels = []
-        for i, out in enumerate(
+        for i, out in tqdm(enumerate(
             text_generation_pipeline(
                 KeyDataset(dataset, "abuse_prompt"),
                 batch_size=8,
@@ -53,7 +56,7 @@ class ModelInference:
                 return_full_text=False,
                 do_sample=True,
             )
-        ):
+        )):
             response = out[0]["generated_text"]
             predictions.append(response)
             texts.append(dataset[i]["text"])
@@ -65,15 +68,26 @@ class ModelInference:
         return out_df
 
     def predict_labels(self):
+        print("Run Started")
         df = self.get_data()
+        print("Fetched Data")
+        df = df[:5]
         prompt = self.get_prompt()
+        print("Prompt template fetched")
         df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(input_sentence=x))
+        print("Prompt formatted")
         text_generation_pipeline = self.get_model_pipeline()
+        print("Model Fetched")
         dataset = Dataset.from_pandas(df)
+        print("Run started")
         out_df = self.generate_output(text_generation_pipeline, dataset)
+        print("Model Run finished")
         return out_df
 
 if __name__ == "__main__":
+    DATASET_PATH = "../data/processed_data/"
+    PROMPTS_PATH = "../prompts/"
+    OUTPUT_PATH = "../outputs/"
     parser = argparse.ArgumentParser()
     parser.add_argument("-dp","--dataset_path", type=str, required=True, help="Path to the dataset file")
     parser.add_argument("-mn","--model_name", type=str, required=True, help="Name of the model to use")
@@ -81,6 +95,8 @@ if __name__ == "__main__":
     parser.add_argument("-op","--output_path", type=str, required=True, help="Path to save the output file")
     args = parser.parse_args()
 
-    model_pipeline = ModelInference(args.dataset_path, args.model_name, args.prompt_path, args.output_path)
+    model_pipeline = ModelInference(DATASET_PATH+args.dataset_path, args.model_name, PROMPTS_PATH+args.prompt_path, OUTPUT_PATH+args.output_path)
     out_df = model_pipeline.predict_labels()
-    out_df.to_csv(args.output_path, index=False)
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    
+    out_df.to_csv(OUTPUT_PATH+args.output_path+timestr+'.csv', index=False)

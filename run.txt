@@ -1,0 +1,1 @@
+python model_inference.py -dp hatexplain/hatexplain_test_data.json -mn microsoft/phi-1_5 -pp phi1.5/zeroshot-phi1.5b.prompt -op zeroshot/hatexplain_phi1.5_zeroshot

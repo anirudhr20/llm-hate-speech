@@ -5,3 +5,4 @@ accelerate
 datasets
 openpyxl
 scikit-learn
+tqdm
