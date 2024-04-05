@@ -48,8 +48,8 @@ class ModelInference:
         for i, out in tqdm(enumerate(
             text_generation_pipeline(
                 KeyDataset(dataset, "abuse_prompt"),
-                batch_size=8,
-                max_new_tokens=10,
+                batch_size=16,
+                max_new_tokens=5,
                 temperature=0.01,
                 top_k=50,
                 top_p=0.95,
@@ -71,7 +71,7 @@ class ModelInference:
         print("Run Started")
         df = self.get_data()
         print("Fetched Data")
-        df = df[:5]
+        # df = df[:5]
         prompt = self.get_prompt()
         print("Prompt template fetched")
         df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(input_sentence=x))
@@ -84,6 +84,15 @@ class ModelInference:
         print("Model Run finished")
         return out_df
 
+def post_process(generated_text:str):
+    generated_text = generated_text.lower()
+    if "non-toxic" in generated_text:
+        return "Non-Toxic"
+    elif "toxic" in generated_text:
+        return "Toxic"
+    else:
+        return generated_text
+    
 if __name__ == "__main__":
     DATASET_PATH = "../data/processed_data/"
     PROMPTS_PATH = "../prompts/"
@@ -97,6 +106,7 @@ if __name__ == "__main__":
 
     model_pipeline = ModelInference(DATASET_PATH+args.dataset_path, args.model_name, PROMPTS_PATH+args.prompt_path, OUTPUT_PATH+args.output_path)
     out_df = model_pipeline.predict_labels()
+    out_df["prediction"] = out_df["prediction"].apply(post_process)
     timestr = time.strftime("%Y%m%d-%H%M%S")
     
     out_df.to_csv(OUTPUT_PATH+args.output_path+timestr+'.csv', index=False)

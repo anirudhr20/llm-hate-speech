@@ -19,7 +19,7 @@ def log_results(model_name, dataset_name, prompt_type, metrics):
 def evaluate_predictions(file_path):
     # Extract model and dataset names from the file name
     base_name = os.path.basename(file_path)  
-    dataset_name, model_name, prompt_type = os.path.splitext(base_name)[0].split('-')  # Split by '-' and remove file extension
+    dataset_name, model_name, prompt_type = os.path.splitext(base_name)[0].split('_')  # Split by '-' and remove file extension
 
     df = pd.read_csv(file_path)
 
