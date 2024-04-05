@@ -1,7 +1,6 @@
-### Instruction:
 Based on the examples given, determine if the provided sentence constitutes hate speech. Hate speech is defined as any communication in speech, writing, or behavior that attacks or uses pejorative or discriminatory language with reference to a person or a group based on attributes such as their religion, ethnicity, nationality, race, color, descent, gender, or other identity factors. Classify the sentence as "Toxic" if it constitutes hate speech, or "Non-Toxic" if it does not.
 
-### Input:
+Input:
 Example 1:
 Sentence: "Agree but races reversed. Africans are literally dependent on white everywhere on earth."
 Classification: Toxic
@@ -26,6 +25,6 @@ Example 6:
 Sentence: "Please stop. If you continue to vandalize Wikipedia, as you did to Homosexuality, you will be blocked from editing."
 Classification: Non-Toxic
 
-Sentence: {input_sentence}
+{input_sentence}
 
-### Response:
+Response:
