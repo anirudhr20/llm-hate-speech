@@ -1,5 +1,3 @@
-### Instruction:
-
 Given the definition of hate speech as any form of communication in speech, writing, or behavior that attacks or
 uses pejorative or discriminatory language with reference to a person or a group based on who they are—specifically 
 their religion, ethnicity, nationality, race, color, descent, gender, or other identity factor-consider the following sentence:
@@ -12,9 +10,7 @@ would be "Toxic". If it does not contain such language and does not attack or de
 on their identity, then it is not hate speech, and the classification would be "Non-Toxic".
 Let's analyze and classify the sentence accordingly.
 
-### Input:
-Sentence: {input_sentence}
+Input: {input_sentence}
 
-### Response:
-
+Response:
 
