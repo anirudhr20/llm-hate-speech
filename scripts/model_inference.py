@@ -23,7 +23,8 @@ class ModelInference:
 
     def get_model_pipeline(self):
         tokenizer = AutoTokenizer.from_pretrained(
-            self.base_model_id, model_max_length=720, padding_side="left", add_eos_token=True, add_bos_token=True
+            self.base_model_id, model_max_length=720, padding_side="left", add_eos_token=True, 
+            # add_bos_token=True
         )
         tokenizer.pad_token = tokenizer.eos_token
         model = AutoModelForCausalLM.from_pretrained(
@@ -66,7 +67,7 @@ class ModelInference:
     def predict_labels(self):
         df = self.get_data()
         prompt = self.get_prompt()
-        df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(sentence=x))
+        df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(input_sentence=x))
         text_generation_pipeline = self.get_model_pipeline()
         dataset = Dataset.from_pandas(df)
         out_df = self.generate_output(text_generation_pipeline, dataset)
