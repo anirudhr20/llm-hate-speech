@@ -71,7 +71,7 @@ class ModelInference:
         print("Run Started")
         df = self.get_data()
         print("Fetched Data")
-        # df = df[:5]
+        # df = df[:100]
         prompt = self.get_prompt()
         print("Prompt template fetched")
         df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(input_sentence=x))
