@@ -28,7 +28,7 @@ def few_shot_prompting_with_retrieval_as_string(prompt, train_data_file_name, n=
     train_data_texts = [item['text'].strip() for item in train_data_json]
     train_data_labels = [item['label'] for item in train_data_json]
     
-    embeddings_file = os.path.join('/kaggle/working', os.path.basename(train_data_file_name) + "_embeddings.npy")
+    embeddings_file = os.path.basename(train_data_file_name) + "_embeddings.npy"
     
     # Embedding
     try:
