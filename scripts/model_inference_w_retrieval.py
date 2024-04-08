@@ -16,20 +16,67 @@ import torch, os
 
 transformers.utils.logging.set_verbosity(transformers.logging.CRITICAL)
 
-
-
+def few_shot_prompting_with_retrieval_as_string(prompt, train_data_file_name, n=3):
+    # Load the model
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    # Load the JSON dataset
+    with open(train_data_file_name, 'r') as file:
+        train_data_json = json.load(file)
+    
+    # Extract texts and their labels
+    train_data_texts = [item['text'].strip() for item in train_data_json]
+    train_data_labels = [item['label'] for item in train_data_json]
+    
+    embeddings_file = os.path.join('/kaggle/working', os.path.basename(train_data_file_name) + "_embeddings.npy")
+    
+    # Embedding
+    try:
+        embeddings = np.load(embeddings_file)
+        embeddings = torch.tensor(embeddings).to(model.device)
+    except FileNotFoundError:
+        embeddings = model.encode(train_data_texts, convert_to_tensor=True)
+        np.save(embeddings_file, embeddings.cpu().numpy())  # Save for later use
+    
+    # Encode the prompt
+    prompt_embedding = model.encode(prompt, convert_to_tensor=True).to(embeddings.device)
+    
+    # Find the most similar texts in the training data
+    cos_scores = util.pytorch_cos_sim(prompt_embedding, embeddings)[0]
+    top_results = torch.topk(cos_scores, k=n)
+    
+    # Retrieve the most similar texts, their labels, and their cosine similarity scores
+    similar_texts_and_labels_and_scores = [
+        (train_data_texts[index], train_data_labels[index], top_results.values[i].item()) 
+        for i, index in enumerate(top_results.indices.cpu().numpy())
+    ]
+    
+    # Assemble the output string
+    output_str = "Given the definition of hate speech as any form of communication in speech, writing, or behavior that attacks or\n"
+    output_str += "uses pejorative or discriminatory language with reference to a person or a group based on who they are—specifically\n"
+    output_str += "their religion, ethnicity, nationality, race, color, descent, gender, or other identity factor—classify the following\n"
+    output_str += "sentences as \"Toxic\" or \"Non-Toxic\":\n\n"
+    output_str += "Examples\n"
+    for text, label, _ in similar_texts_and_labels_and_scores:
+        output_str += f"- {text} -> {label}\n"
+    output_str += "\nPlease use the above knowledge to classify the below sentence as \"Toxic\" or \"Non-Toxic\". Do not hallucinate.\n\n"
+    output_str += "Input: {input_sentence}\n"
+    output_str += "Response:"
+    
+    return output_str
 
 
 class ModelInference:
-    def __init__(self, dataset_path, model_name, prompt_path, output_path) -> None:
+    def __init__(self, train_dataset_path, test_dataset_path, model_name, prompt_path, output_path) -> None:
         self.access_token = "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"
-        self.data_filepath = dataset_path
+        self.train_data_filepath = train_dataset_path
+        self.test_data_filepath = test_dataset_path
         self.base_model_id = model_name
         self.prompt_filepath = prompt_path
         self.output_path = output_path
 
     def get_data(self):
-        df = pd.read_json(self.data_filepath)
+        df = pd.read_json(self.test_data_filepath)
         return df
 
     def get_model_pipeline(self):
@@ -44,10 +91,6 @@ class ModelInference:
         pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device_map="auto", token=self.access_token)
         return pipe
 
-    def get_prompt(self):
-        with open(self.prompt_filepath) as f:
-            prompt = f.read()
-        return prompt
 
     def generate_output(self, text_generation_pipeline, dataset):
         predictions = []
@@ -80,9 +123,7 @@ class ModelInference:
         df = self.get_data()
         print("Fetched Data")
         # df = df[:100]
-        prompt = self.get_prompt()
-        print("Prompt template fetched")
-        df["abuse_prompt"] = df["text"].apply(lambda x: prompt.format(input_sentence=x))
+        df["abuse_prompt"] = df["text"].apply(lambda x: few_shot_prompting_with_retrieval_as_string(x, self.train_data_filepath, n=3))
         print("Prompt formatted")
         text_generation_pipeline = self.get_model_pipeline()
         print("Model Fetched")
@@ -106,13 +147,16 @@ if __name__ == "__main__":
     PROMPTS_PATH = "../prompts/"
     OUTPUT_PATH = "../outputs/"
     parser = argparse.ArgumentParser()
-    parser.add_argument("-dp","--dataset_path", type=str, required=True, help="Path to the dataset file")
+    parser.add_argument("-train","--train_dataset_path", type=str, required=True, help="Path to the train dataset file")
+    parser.add_argument("-test","--test_dataset_path", type=str, required=True, help="Path to the test dataset file")
     parser.add_argument("-mn","--model_name", type=str, required=True, help="Name of the model to use")
     parser.add_argument("-pp","--prompt_path", type=str, required=True, help="Path to the prompt file")
     parser.add_argument("-op","--output_path", type=str, required=True, help="Path to save the output file")
     args = parser.parse_args()
 
-    model_pipeline = ModelInference(DATASET_PATH+args.dataset_path, args.model_name, PROMPTS_PATH+args.prompt_path, OUTPUT_PATH+args.output_path)
+    train_data_file_name = DATASET_PATH +args.train_dataset_path
+    test_data_file_name = DATASET_PATH +args.test_dataset_path
+    model_pipeline = ModelInference(train_data_file_name, test_data_file_name, args.model_name, PROMPTS_PATH+args.prompt_path, OUTPUT_PATH+args.output_path)
     out_df = model_pipeline.predict_labels()
     out_df["prediction"] = out_df["prediction"].apply(post_process)
     timestr = time.strftime("%Y%m%d-%H%M%S")
