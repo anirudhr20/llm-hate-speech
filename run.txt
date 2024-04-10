@@ -57,5 +57,5 @@ python model_inference.py -dp jigsaw/jigsaw_test_data_bal.json -mn mistralai/Mis
 python evaluation.py -fp ../outputs/zeroshot/hatexplain_phi1.5_zeroshot20240405-173116.csv
 
 
-
+python model_inference_w_retrieval.py -train hatexplain/hatexplain_train_data_bal.json -test hatexplain/hatexplain_test_data_bal.json -mn microsoft/phi-2 -pp mistral/fewshot-mistral.prompt -op fewshot-retrieval/hatexplain_phi2_fewshot_retrieval
 

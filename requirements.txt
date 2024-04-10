@@ -6,3 +6,4 @@ datasets
 openpyxl
 scikit-learn
 tqdm
+sentence-transformers

@@ -14,12 +14,12 @@ from sentence_transformers import SentenceTransformer, util
 import numpy as np
 import torch, os
 
+tqdm.pandas()
 transformers.utils.logging.set_verbosity(transformers.logging.CRITICAL)
 
-def few_shot_prompting_with_retrieval_as_string(prompt, train_data_file_name, n=3):
-    # Load the model
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def load_embeddings(train_data_file_name):
     # Load the JSON dataset
     with open(train_data_file_name, 'r') as file:
         train_data_json = json.load(file)
@@ -31,13 +31,12 @@ def few_shot_prompting_with_retrieval_as_string(prompt, train_data_file_name, n=
     embeddings_file = os.path.basename(train_data_file_name) + "_embeddings.npy"
     
     # Embedding
-    try:
-        embeddings = np.load(embeddings_file)
-        embeddings = torch.tensor(embeddings).to(model.device)
-    except FileNotFoundError:
-        embeddings = model.encode(train_data_texts, convert_to_tensor=True)
-        np.save(embeddings_file, embeddings.cpu().numpy())  # Save for later use
     
+    embeddings = model.encode(train_data_texts, convert_to_tensor=True)
+    return embeddings, train_data_texts, train_data_labels
+    
+def few_shot_prompting_with_retrieval_as_string(prompt, embeddings, train_data_texts, train_data_labels, n=3):
+
     # Encode the prompt
     prompt_embedding = model.encode(prompt, convert_to_tensor=True).to(embeddings.device)
     
@@ -59,8 +58,8 @@ def few_shot_prompting_with_retrieval_as_string(prompt, train_data_file_name, n=
     output_str += "Examples\n"
     for text, label, _ in similar_texts_and_labels_and_scores:
         output_str += f"- {text} -> {label}\n"
-    output_str += "\nPlease use the above knowledge to classify the below sentence as \"Toxic\" or \"Non-Toxic\". Do not hallucinate.\n\n"
-    output_str += "Input: {input_sentence}\n"
+    output_str += "\nPlease use the above knowledge to classify the below sentence as \"Toxic\" or \"Non-Toxic\". Your response must be only 'Toxic' or 'Non-Toxic'.\n\n"
+    output_str += f"Input: {prompt}\n"
     output_str += "Response:"
     
     return output_str
@@ -96,7 +95,7 @@ class ModelInference:
         predictions = []
         texts = []
         labels = []
-        for i, out in tqdm(enumerate(
+        for i, out in enumerate(tqdm(
             text_generation_pipeline(
                 KeyDataset(dataset, "abuse_prompt"),
                 batch_size=16,
@@ -122,8 +121,10 @@ class ModelInference:
         print("Run Started")
         df = self.get_data()
         print("Fetched Data")
-        # df = df[:100]
-        df["abuse_prompt"] = df["text"].apply(lambda x: few_shot_prompting_with_retrieval_as_string(x, self.train_data_filepath, n=3))
+        # df = df[:150]
+        embeddings, train_data_texts, train_data_labels = load_embeddings(self.train_data_filepath)
+        df["abuse_prompt"] = df["text"].progress_apply(lambda x: few_shot_prompting_with_retrieval_as_string(x, embeddings, train_data_texts, train_data_labels, n=3))
+        print(df.iloc[0]["abuse_prompt"])
         print("Prompt formatted")
         text_generation_pipeline = self.get_model_pipeline()
         print("Model Fetched")
